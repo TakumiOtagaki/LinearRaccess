@@ -1,0 +1,8 @@
+/build*/
+/bin/
+/temp/
+*.o
+*.d
+*.racc
+*.profile
+.DS_Store

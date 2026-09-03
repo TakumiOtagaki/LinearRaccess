@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build build -j2
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Test installed CMake package
+        run: |
+          cmake --install build --prefix _install
+          cmake -S tests/install_consumer -B build-consumer \
+            -DCMAKE_PREFIX_PATH=${{ github.workspace }}/_install
+          cmake --build build-consumer -j2
+          ./build-consumer/consumer
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with ASan and UBSan
+        run: >-
+          cmake -S . -B build-sanitized -DBUILD_TESTING=ON
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build
+        run: cmake --build build-sanitized -j2
+      - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+        run: ctest --test-dir build-sanitized --output-on-failure
