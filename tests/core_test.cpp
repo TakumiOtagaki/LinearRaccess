@@ -159,6 +159,29 @@ void check_beam_ties() {
           "beam tie-breaking is not deterministic");
 }
 
+void check_hairpin_cap_consistency() {
+  const std::string sequence =
+      "GUGCCCCCUCCGAUGCCGAGAGAUCCAAAGUCAUCGUUCCAAUGGGGGCUUUGUAGUCUG";
+  auto config = exact_config(lcr::api::EnergyModel::Turner2004,
+                             static_cast<int>(sequence.size()));
+  config.c_hairpin = 10;
+  const std::vector<int> lengths{1, 3, 7, 10, 20};
+  const auto result = lcr::api::linear_raccess(sequence, lengths, config);
+  for (std::size_t length_index = 0; length_index < lengths.size(); ++length_index) {
+    for (std::size_t i = 0; i < result.accessibility[length_index].size(); ++i) {
+      const double probability = result.accessibility[length_index][i];
+      require(probability >= -1e-12 && probability <= 1.0 + 1e-12,
+              "hairpin cap produced an invalid probability");
+      if (length_index + 1 < lengths.size()
+          && i < result.accessibility[length_index + 1].size()) {
+        const double longer = result.accessibility[length_index + 1][i];
+        require(longer <= probability + 1e-10,
+                "hairpin cap broke nested-window monotonicity");
+      }
+    }
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -177,6 +200,7 @@ int main() {
          0.060053828910026037, 4.194054355636042e-06});
     check_input_contract();
     check_beam_ties();
+    check_hairpin_cap_consistency();
   } catch (const std::exception& error) {
     std::cerr << "FAIL: " << error.what() << '\n';
     return EXIT_FAILURE;

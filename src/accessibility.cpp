@@ -55,6 +55,7 @@ AccessibilityByLoop LinCapR::calc_accessibility_by_loop(int window) const {
 		for(const auto& kv : beta_SE[e]){
 			const int s = kv.first;
 			const double score = kv.second;
+			if(e - s + 1 > c_hairpin) continue;
 			if(e - s + 1 < window) continue;
 			const int outer_i = s - 1;
 			const int outer_j = e + 1;

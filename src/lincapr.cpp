@@ -22,6 +22,7 @@ void LinCapR::calc_profile(){
 
 	for(int k = 0; k < seq_n; k++){
 		for(const auto [j, score] : beta_SE[k]){
+			if(k - j + 1 > c_hairpin) continue;
 			// H: unpaired range is derived from raw closing pair (outer_i, outer_j).
 			const int outer_i = j - 1;
 			const int outer_j = k + 1;
