@@ -167,6 +167,17 @@ void check_hairpin_cap_consistency() {
   config.c_hairpin = 10;
   const std::vector<int> lengths{1, 3, 7, 10, 20};
   const auto result = lcr::api::linear_raccess(sequence, lengths, config);
+  const auto profile = lcr::api::lincapr_profile(sequence, config);
+  for (std::size_t i = 0; i < sequence.size(); ++i) {
+    check_close(profile.bulge[i], result.bulge[0][i], 1e-12,
+                "hairpin cap must not omit bulge profile mass");
+    check_close(profile.internal[i], result.internal[0][i], 1e-12,
+                "hairpin cap must not omit internal profile mass");
+    const double sum = profile.bulge[i] + profile.internal[i]
+        + profile.hairpin[i] + profile.exterior[i]
+        + profile.multiloop[i] + profile.stem[i];
+    check_close(sum, 1.0, 1e-10, "raw capped structural profile normalization");
+  }
   for (std::size_t length_index = 0; length_index < lengths.size(); ++length_index) {
     for (std::size_t i = 0; i < result.accessibility[length_index].size(); ++i) {
       const double probability = result.accessibility[length_index][i];

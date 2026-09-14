@@ -22,14 +22,17 @@ void LinCapR::calc_profile(){
 
 	for(int k = 0; k < seq_n; k++){
 		for(const auto [j, score] : beta_SE[k]){
-			if(k - j + 1 > c_hairpin) continue;
 			// H: unpaired range is derived from raw closing pair (outer_i, outer_j).
 			const int outer_i = j - 1;
 			const int outer_j = k + 1;
 			const int unp_l = outer_i + 1;
 			const int unp_r = outer_j - 1;
-			lcr::dp::add_range(prob_H, unp_l, unp_r,
-			                   exp(score - _energy->energy_hairpin(outer_i, outer_j) / _energy->kT() - logZ));
+			// The hairpin cap applies only to H. The same enclosing pair can
+			// contain a short bulge/internal loop around a much longer stem.
+			if(k - j + 1 <= c_hairpin){
+				lcr::dp::add_range(prob_H, unp_l, unp_r,
+				                   exp(score - _energy->energy_hairpin(outer_i, outer_j) / _energy->kT() - logZ));
+			}
 
 			// B, I
 			for(int p = j; p <= min(j + MAXLOOP, k - 1); p++){
