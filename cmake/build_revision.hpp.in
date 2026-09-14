@@ -1,0 +1,4 @@
+#pragma once
+namespace lcr {
+inline constexpr char kBuildSourceRevision[] = "@SOURCE_REVISION@";
+}

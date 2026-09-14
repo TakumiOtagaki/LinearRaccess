@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import subprocess
 import tempfile
@@ -26,11 +27,23 @@ def main() -> int:
     args = parser.parse_args()
     executable = args.executable.resolve()
     require(executable.is_file(), f"missing executable: {executable}")
+    build_info_result = run([str(executable), "--build-info"])
+    require(build_info_result.returncode == 0, build_info_result.stderr)
+    build_info = json.loads(build_info_result.stdout)
+    require(build_info['software_version'] == '0.1.0', 'incorrect software version')
+    require(bool(build_info['source_revision']), 'missing embedded source revision')
 
     with tempfile.TemporaryDirectory(prefix="linearraccess_cli_") as raw_tmp:
         tmp = Path(raw_tmp)
         valid = tmp / "valid.fa"
         valid.write_text(">test\nGCGAAACGC\n", encoding="ascii")
+
+        default_output = tmp / 'default_metadata.txt'
+        embedded = run([str(executable), f'-seqfile={valid}', f'-outfile={default_output}',
+                        '-access_len=1', '-probabilities', '-metadata'])
+        require(embedded.returncode == 0, embedded.stdout + embedded.stderr)
+        require('# source_revision=' + build_info['source_revision'] in default_output.read_text().splitlines(),
+                'default metadata must use the compiled revision')
 
         output = tmp / "probabilities.txt"
         completed = run(

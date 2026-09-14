@@ -56,7 +56,15 @@ if(LINEARRACCESS_WITH_RACCESS)
 endif()
 
 add_executable(LinRacc src/linracc_main.cpp)
-target_include_directories(LinRacc PRIVATE src)
+add_custom_target(linearraccess_revision
+  COMMAND "${CMAKE_COMMAND}"
+          "-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+          "-DOUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/generated"
+          -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/WriteRevision.cmake"
+  BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/generated/build_revision.hpp"
+  VERBATIM)
+add_dependencies(LinRacc linearraccess_revision)
+target_include_directories(LinRacc PRIVATE src "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(LinRacc PRIVATE linearraccess)
 
 include(CTest)

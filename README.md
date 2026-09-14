@@ -57,6 +57,19 @@ For every reported result, record at least the energy backend/model, beam,
 `c_multi`, `c_hairpin`, log-sum-exp mode, normalization setting, and requested
 window lengths. `-metadata` writes these fields into the output.
 
+### Build provenance
+
+`LinRacc --build-info` prints the software version and embedded source revision
+as JSON. CMake refreshes the revision header on every build, including after a
+commit without source edits. A dirty checkout is marked with `-dirty`; a source
+archive without Git metadata reports `unknown`. Probability output metadata uses
+this embedded revision by default. `-source-revision` remains an explicit output
+label override and does not change `--build-info`.
+
+For reproducible production jobs, build from a clean commit and record both the
+embedded revision and the executable's SHA-256. Do not infer an old executable's
+revision from the current checkout.
+
 ## C++ API
 
 ```cpp

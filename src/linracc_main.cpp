@@ -6,6 +6,7 @@
 #include "io.hpp"
 #include "linearraccess/dp_table_api.hpp"
 #include "linearraccess/version.hpp"
+#include "build_revision.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -181,6 +182,7 @@ void usage(){
 	std::cout << "  -byloop            Output per-loop accessibility breakdown (extra column)\n";
 	std::cout << "  -metadata          Prepend reproducibility metadata comments\n";
 	std::cout << "  -source-revision=<id>  Revision token recorded with -metadata\n";
+	std::cout << "  --build-info          Print embedded build version/revision as JSON\n";
 	std::cout << "  -debug-exit        Call std::exit(0) after run (skip destructors)\n";
 	std::cout << "  -debug-release-energy  Reset energy model after run\n";
 	std::cout << "  -debug-leak-energy     Leak energy model after run\n";
@@ -198,6 +200,11 @@ void usage(){
 } // namespace
 
 int main(int argc, char** argv){
+	if(argc == 2 && std::string(argv[1]) == "--build-info"){
+		std::cout << "{\"software_version\":\"" << lcr::kSoftwareVersion
+		          << "\",\"source_revision\":\"" << lcr::kBuildSourceRevision << "\"}\n";
+		return 0;
+	}
 	if(argc < 2){
 		usage();
 		return 1;
@@ -215,7 +222,7 @@ int main(int argc, char** argv){
 	bool output_probabilities = false;
 	bool byloop = false;
 	bool output_metadata = false;
-	std::string source_revision = "unknown";
+	std::string source_revision = lcr::kBuildSourceRevision;
 	bool debug_exit = false;
 	bool debug_release_energy = false;
 	bool debug_leak_energy = false;
