@@ -17,7 +17,7 @@ enum class EnergyEngine {
 };
 
 struct LinearRaccessConfig {
-	int beam = 200;
+	int beam = 100;
 	int c_multi = 30;
 	int c_hairpin = 30;
 	double rt = 0.61633008;
