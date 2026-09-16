@@ -181,6 +181,7 @@ void usage(){
 	std::cout << "  -probabilities     Output raw probabilities instead of -RT log(P)\n";
 	std::cout << "  -byloop            Output per-loop accessibility breakdown (extra column)\n";
 	std::cout << "  -metadata          Prepend reproducibility metadata comments\n";
+	std::cout << "  -print-ensemble-energy  Print each sequence's ensemble free energy (kcal/mol) as a comment before its output block\n";
 	std::cout << "  -source-revision=<id>  Revision token recorded with -metadata\n";
 	std::cout << "  --build-info          Print embedded build version/revision as JSON\n";
 	std::cout << "  -debug-exit        Call std::exit(0) after run (skip destructors)\n";
@@ -222,6 +223,7 @@ int main(int argc, char** argv){
 	bool output_probabilities = false;
 	bool byloop = false;
 	bool output_metadata = false;
+	bool print_ensemble_energy = false;
 	std::string source_revision = lcr::kBuildSourceRevision;
 	bool debug_exit = false;
 	bool debug_release_energy = false;
@@ -281,6 +283,8 @@ int main(int argc, char** argv){
 			byloop = true;
 		}else if(arg == "-metadata" || arg == "--metadata"){
 			output_metadata = true;
+		}else if(arg == "-print-ensemble-energy" || arg == "--print-ensemble-energy"){
+			print_ensemble_energy = true;
 		}else if(arg.rfind("-source-revision=", 0) == 0
 		         || arg.rfind("--source-revision=", 0) == 0){
 			const size_t equals = arg.find('=');
@@ -502,6 +506,10 @@ int main(int argc, char** argv){
 			}
 		}
 
+		if(print_ensemble_energy){
+			ofs << "# ensemble_free_energy_kcal_mol=" << lcr.get_energy_ensemble()
+			    << " seq=" << names[idx] << " beam=" << beam << "\n";
+		}
 		if(byloop){
 			lcr::io::accessibility_raccess_byloop_io(
 				ofs,
