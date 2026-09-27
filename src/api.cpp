@@ -52,8 +52,10 @@ double length_factor_for(EnergyEngine engine) {
 }
 
 void validate_config(const LinearRaccessConfig& config) {
-	if(config.beam < 0 || config.c_multi < 0 || config.c_hairpin < 0){
-		throw std::invalid_argument("beam, c_multi, and c_hairpin must be non-negative");
+	if(config.beam < 0
+	   || (config.c_multi < 0 && config.c_multi != kLoopCapAuto)
+	   || (config.c_hairpin < 0 && config.c_hairpin != kLoopCapAuto)){
+		throw std::invalid_argument("beam must be non-negative; c_multi and c_hairpin must be non-negative or kLoopCapAuto");
 	}
 	if(!(config.rt > 0.0) || !std::isfinite(config.rt)){
 		throw std::invalid_argument("rt must be a finite positive output-conversion constant");

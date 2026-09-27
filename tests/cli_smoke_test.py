@@ -44,6 +44,14 @@ def main() -> int:
         require(embedded.returncode == 0, embedded.stdout + embedded.stderr)
         require('# source_revision=' + build_info['source_revision'] in default_output.read_text().splitlines(),
                 'default metadata must use the compiled revision')
+        default_lines = default_output.read_text().splitlines()
+        require('# c_multi=auto' in default_lines and '# c_hairpin=auto' in default_lines,
+                'loop caps must default to auto')
+        for cap_arg, ok in (('-c_multi=auto', True), ('-c_hairpin=auto', True),
+                            ('-c_multi=-1', False), ('-c_hairpin=x', False)):
+            cap_run = run([str(executable), f'-seqfile={valid}',
+                           f"-outfile={tmp / 'cap.txt'}", '-access_len=1', cap_arg])
+            require((cap_run.returncode == 0) == ok, f'unexpected exit for {cap_arg}')
 
         output = tmp / "probabilities.txt"
         completed = run(

@@ -39,13 +39,16 @@ maximum-span approximation, beam pruning can retain long-range base pairs.
 
 At one sequence position, the dominant bifurcation combines at most `b`
 retained `M2` states with at most `b` retained `M1` states. The inside and
-outside traversals therefore have an `O(N b^2)` upper bound. Other transition
-families are linear in `N` when `c_multi`, `c_hairpin`, `MAXLOOP`, and the
-number of requested window lengths are fixed. Retained tables use `O(N b)`
-memory; output storage is linear in `N` per requested window length.
+outside traversals therefore have an `O(N b^2)` upper bound. By default
+`c_multi = c_hairpin = b`, so multiloop unpaired runs cost `O(N b^2)` and
+hairpin candidates `O(N b)`; with `MAXLOOP` (30) and the number of requested
+window lengths fixed, every transition family stays linear in `N`. Retained
+tables use `O(N b)` memory; output storage is linear in `N` per requested
+window length.
 
-The loop-cap qualification is material. Setting either cap proportional to
-`N` for exact validation is outside the fixed-cap production bound.
+With `beam=0` the default caps become the sequence length, i.e. the exact,
+uncapped model; that setting is for validation and is outside the linear
+bound.
 
 ## Numerical modes
 

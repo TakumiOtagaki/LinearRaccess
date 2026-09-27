@@ -6,6 +6,11 @@
 namespace lcr {
 namespace api {
 
+// Loop-cap value meaning "tie the cap to the beam": the cap is the beam
+// width b, or the sequence length when beam=0 (exact), so beam -> infinity
+// recovers the uncapped model.
+inline constexpr int kLoopCapAuto = -1;
+
 enum class EnergyModel {
 	Turner2004,
 	Turner1999,
@@ -18,8 +23,8 @@ enum class EnergyEngine {
 
 struct LinearRaccessConfig {
 	int beam = 100;
-	int c_multi = 30;
-	int c_hairpin = 30;
+	int c_multi = kLoopCapAuto;
+	int c_hairpin = kLoopCapAuto;
 	double rt = 0.61633008;
 	bool normalize_profiles = true;
 	bool fast_logsumexp = true;

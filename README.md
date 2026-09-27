@@ -107,18 +107,21 @@ optional dependency happens to be present.
 
 ## Algorithmic contract and limitations
 
-For fixed beam width `b`, loop caps, and number of requested window lengths,
-the production work is `O(N b^2)` and retained DP memory is `O(N b)`. The
-quadratic-in-beam term is the retained `M2 x M1` bifurcation. Short prefixes
-under-fill the beam, so a finite timing fit need not show the asymptotic upper
-bound directly.
+By default the hairpin and multiloop unpaired-length caps (`c_hairpin`,
+`c_multi`) are tied to the beam: both equal `b`, or the sequence length when
+`beam=0`. The only fixed structural limit is the conventional 30-nt
+internal-loop limit, and `beam -> infinity` recovers the uncapped model. For
+fixed `b` and number of requested window lengths, the production work is
+`O(N b^2)` and retained DP memory is `O(N b)`. The quadratic-in-beam terms are
+the retained `M2 x M1` bifurcation and the multiloop unpaired runs of length up
+to `b`. Short prefixes under-fill the beam, so a finite timing fit need not show
+the asymptotic upper bound directly.
 
-Four settings can change numerical results: beam pruning, `c_multi`,
-`c_hairpin`, and the polynomial fast log-sum-exp. Set `beam=0`, raise both loop
-caps to at least the sequence length, use `-no-fast-logsumexp`, and use
-`-no-normalize` for exact short-sequence validation. Raising loop caps with
-sequence length deliberately leaves the fixed-cap complexity regime and is
-not intended for long inputs.
+Numerical results depend on beam pruning and the polynomial fast log-sum-exp
+(and on `c_multi`/`c_hairpin` if set explicitly). Set `beam=0`, use
+`-no-fast-logsumexp`, and use `-no-normalize` for exact short-sequence
+validation. Explicit integer caps (e.g. `-c_multi=30 -c_hairpin=30`, the
+previous defaults) remain available.
 
 See [docs/algorithm.md](docs/algorithm.md) and
 [docs/validation.md](docs/validation.md) for the method and evidence boundary.

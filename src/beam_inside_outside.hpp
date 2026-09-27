@@ -17,6 +17,9 @@ struct AccessibilityByLoop {
 	std::vector<double> multiloop;
 };
 
+// Loop cap tied to the beam (see lcr::api::kLoopCapAuto).
+constexpr int LOOP_CAP_AUTO = -1;
+
 class LinCapR{
 public:
 	enum class EnergyEngine { LinearCapR, Raccess };
@@ -26,8 +29,8 @@ public:
 	       bool raccess_use_lincapr_external = false,
 	       bool normalize_profiles = true,
 	       Float normalize_warn_eps = 1e-6,
-	       int c_multi = 30,
-	       int c_hairpin = MAXLOOP);
+	       int c_multi = LOOP_CAP_AUTO,
+	       int c_hairpin = LOOP_CAP_AUTO);
 	// compute_profile=false skips the structural-profile pass, which
 	// accessibility (calc_accessibility*) does not use.
 	void run(const string&, bool compute_profile = true);
@@ -71,8 +74,12 @@ public:
 private:
 	const energy::Params &params;
 	const int beam_size;
-	const int c_multi;
-	const int c_hairpin;
+	// Requested caps (LOOP_CAP_AUTO or >= 0) and the effective caps, which
+	// initialize() resolves once the sequence length is known.
+	const int c_multi_requested;
+	const int c_hairpin_requested;
+	int c_multi = 0;
+	int c_hairpin = 0;
 	const bool normalize_profiles;
 	const Float normalize_warn_eps;
 	bool debug_hairpin_build_log = false;

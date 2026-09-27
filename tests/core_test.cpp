@@ -247,6 +247,41 @@ void check_multi_window_pass() {
   }
 }
 
+
+// Default (auto) loop caps equal the beam width, or the sequence length at
+// beam=0, so beam -> infinity recovers the uncapped model.
+void check_auto_loop_caps() {
+  const std::string sequence =
+      "GUGCCCCCUCCGAUGCCGAGAGAUCCAAAGUCAUCGUUCCAAUGGGGGCUUUGUAGUCUG";
+  const int n = static_cast<int>(sequence.size());
+  const std::vector<int> lengths{1, 3, 7, 10};
+  lcr::api::LinearRaccessConfig defaults;
+  require(defaults.c_multi == lcr::api::kLoopCapAuto
+              && defaults.c_hairpin == lcr::api::kLoopCapAuto,
+          "loop caps must default to auto");
+  for (const int beam : {0, 5, 40}) {
+    auto automatic = defaults;
+    automatic.beam = beam;
+    auto explicit_caps = automatic;
+    explicit_caps.c_multi = explicit_caps.c_hairpin = beam > 0 ? beam : n;
+    const auto a = lcr::api::linear_raccess(sequence, lengths, automatic);
+    const auto e = lcr::api::linear_raccess(sequence, lengths, explicit_caps);
+    for (std::size_t k = 0; k < lengths.size(); ++k) {
+      require_identical(a.accessibility[k], e.accessibility[k],
+                        "auto caps beam=" + std::to_string(beam));
+    }
+  }
+  bool invalid_cap_rejected = false;
+  try {
+    auto invalid = defaults;
+    invalid.c_multi = -2;
+    static_cast<void>(lcr::api::linear_raccess(sequence, {1}, invalid));
+  } catch (const std::invalid_argument&) {
+    invalid_cap_rejected = true;
+  }
+  require(invalid_cap_rejected, "negative non-auto loop cap was accepted");
+}
+
 }  // namespace
 
 int main() {
@@ -267,6 +302,7 @@ int main() {
     check_beam_ties();
     check_hairpin_cap_consistency();
     check_multi_window_pass();
+    check_auto_loop_caps();
   } catch (const std::exception& error) {
     std::cerr << "FAIL: " << error.what() << '\n';
     return EXIT_FAILURE;

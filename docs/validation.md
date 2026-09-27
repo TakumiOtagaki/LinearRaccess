@@ -35,8 +35,8 @@ attributed to the default Turner-2004 standalone backend.
 
 ## Approximation and scaling boundary
 
-The production approximations are finite beam width, `c_multi`, `c_hairpin`,
-and polynomial log-sum-exp. Existing 500-nt convergence runs show that error
+The production approximations are finite beam width (which by default also
+sets `c_multi` and `c_hairpin`) and polynomial log-sum-exp. Existing 500-nt convergence runs show that error
 decreases as the beam and caps are relaxed, but no one setting is asserted to
 be sufficient for every input class.
 

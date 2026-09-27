@@ -20,18 +20,18 @@ LinCapR::LinCapR(int beam_size, energy::Model model, EnergyEngine engine,
                  int c_hairpin)
 	: params(energy::get_params(model)),
 	  beam_size(beam_size),
-	  c_multi(c_multi),
-	  c_hairpin(c_hairpin),
+	  c_multi_requested(c_multi),
+	  c_hairpin_requested(c_hairpin),
 	  normalize_profiles(normalize_profiles),
 	  normalize_warn_eps(normalize_warn_eps) {
 	if(beam_size < 0){
 		throw std::invalid_argument("beam size must be non-negative");
 	}
-	if(c_multi < 0){
-		throw std::invalid_argument("c_multi must be non-negative");
+	if(c_multi < 0 && c_multi != LOOP_CAP_AUTO){
+		throw std::invalid_argument("c_multi must be non-negative or LOOP_CAP_AUTO");
 	}
-	if(c_hairpin < 0){
-		throw std::invalid_argument("c_hairpin must be non-negative");
+	if(c_hairpin < 0 && c_hairpin != LOOP_CAP_AUTO){
+		throw std::invalid_argument("c_hairpin must be non-negative or LOOP_CAP_AUTO");
 	}
 	if(normalize_warn_eps < 0 || !std::isfinite(normalize_warn_eps)){
 		throw std::invalid_argument(
@@ -261,6 +261,11 @@ void LinCapR::initialize(const string &seq){
 
 	// integerize sequence
 	seq_n = seq.length();
+
+	// Auto loop caps follow the beam; beam=0 (exact) leaves loops uncapped.
+	const int auto_cap = beam_size > 0 ? beam_size : seq_n;
+	c_multi = c_multi_requested == LOOP_CAP_AUTO ? auto_cap : c_multi_requested;
+	c_hairpin = c_hairpin_requested == LOOP_CAP_AUTO ? auto_cap : c_hairpin_requested;
 	seq_int.resize(seq_n);
 	for(int i = 0; i < seq_n; i++){
 		seq_int[i] = lcr::seq::base_to_num(seq[i]);

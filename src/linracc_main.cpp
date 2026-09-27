@@ -25,6 +25,22 @@ namespace {
 
 constexpr double kDefaultOutputRtKcalMol = 0.61633008;
 
+bool parse_integer(const std::string& raw, int& value);
+
+// "auto" ties the loop cap to the beam (LOOP_CAP_AUTO); otherwise a
+// non-negative integer.
+bool parse_loop_cap(const std::string& raw, int& value){
+	if(raw == "auto"){
+		value = LOOP_CAP_AUTO;
+		return true;
+	}
+	return parse_integer(raw, value) && value >= 0;
+}
+
+std::string loop_cap_label(int cap){
+	return cap == LOOP_CAP_AUTO ? std::string("auto") : std::to_string(cap);
+}
+
 bool parse_integer(const std::string& raw, int& value){
 	try{
 		size_t used = 0;
@@ -143,8 +159,8 @@ void write_metadata(std::ostream& os,
 	                                               : model_name(model))
 	   << "\n";
 	os << "# beam=" << beam << "\n";
-	os << "# c_multi=" << c_multi << "\n";
-	os << "# c_hairpin=" << c_hairpin << "\n";
+	os << "# c_multi=" << loop_cap_label(c_multi) << "\n";
+	os << "# c_hairpin=" << loop_cap_label(c_hairpin) << "\n";
 	os << "# logsumexp=" << (fast_logsumexp ? "fast" : "exact") << "\n";
 	os << "# normalize_profiles=" << (normalize_profiles ? "true" : "false") << "\n";
 	os << "# length_factor=" << engine_length_factor(engine) << "\n";
@@ -173,8 +189,9 @@ void usage(){
 	std::cout << " or raccess (optional; fixed Turner 1999)";
 #endif
 	std::cout << "\n";
-	std::cout << "  -c_multi=<int>     Max multiloop unpaired length (default: 30)\n";
-	std::cout << "  -c_hairpin=<int>   Max direct hairpin-loop length (default: 30)\n";
+	std::cout << "  -c_multi=<int|auto>   Max multiloop unpaired length (default: auto = beam,\n"
+	          << "                        or sequence length when -beam=0)\n";
+	std::cout << "  -c_hairpin=<int|auto> Max direct hairpin-loop length (default: auto)\n";
 	std::cout << "  -no-normalize      Disable per-position profile normalization\n";
 	std::cout << "  -no-fast-logsumexp Disable polynomial logsumexp approximation\n";
 	std::cout << "  -rt=<float>        RT used only for probability-to-energy output (default: 0.61633008)\n";
@@ -215,8 +232,8 @@ int main(int argc, char** argv){
 	std::string outfile;
 	std::vector<int> access_lens;
 	int beam = 100;
-	int c_multi = 30;
-	int c_hairpin = MAXLOOP;
+	int c_multi = LOOP_CAP_AUTO;
+	int c_hairpin = LOOP_CAP_AUTO;
 	double rt = kDefaultOutputRtKcalMol;
 	bool normalize_profiles = true;
 	bool disable_fast_logsumexp = false;
@@ -259,13 +276,13 @@ int main(int argc, char** argv){
 				return 1;
 			}
 		}else if(arg.rfind("-c_multi=", 0) == 0){
-			if(!parse_integer(arg.substr(strlen("-c_multi=")), c_multi)){
-				std::cout << "Error: -c_multi must be an integer.\n";
+			if(!parse_loop_cap(arg.substr(strlen("-c_multi=")), c_multi)){
+				std::cout << "Error: -c_multi must be a non-negative integer or auto.\n";
 				return 1;
 			}
 		}else if(arg.rfind("-c_hairpin=", 0) == 0){
-			if(!parse_integer(arg.substr(strlen("-c_hairpin=")), c_hairpin)){
-				std::cout << "Error: -c_hairpin must be an integer.\n";
+			if(!parse_loop_cap(arg.substr(strlen("-c_hairpin=")), c_hairpin)){
+				std::cout << "Error: -c_hairpin must be a non-negative integer or auto.\n";
 				return 1;
 			}
 		}else if(arg.rfind("-rt=", 0) == 0){
@@ -387,8 +404,8 @@ int main(int argc, char** argv){
 		usage();
 		return 1;
 	}
-	if(beam < 0 || c_multi < 0 || c_hairpin < 0){
-		std::cout << "Error: -beam, -c_multi, and -c_hairpin must be non-negative.\n";
+	if(beam < 0){
+		std::cout << "Error: -beam must be non-negative.\n";
 		return 1;
 	}
 	if(!(rt > 0.0) || !std::isfinite(rt)){
