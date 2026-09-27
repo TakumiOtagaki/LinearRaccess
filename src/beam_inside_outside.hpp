@@ -28,7 +28,9 @@ public:
 	       Float normalize_warn_eps = 1e-6,
 	       int c_multi = 30,
 	       int c_hairpin = MAXLOOP);
-	void run(const string&);
+	// compute_profile=false skips the structural-profile pass, which
+	// accessibility (calc_accessibility*) does not use.
+	void run(const string&, bool compute_profile = true);
 	void output(ofstream&, const string&) const;
 	void clear();
 	Float get_energy_ensemble() const;
@@ -64,6 +66,8 @@ public:
 	double logW_all_unpaired() const;
 	vector<double> calc_accessibility(int window) const;
 	AccessibilityByLoop calc_accessibility_by_loop(int window) const;
+	vector<vector<double>> calc_accessibility(const vector<int>& windows) const;
+	vector<AccessibilityByLoop> calc_accessibility_by_loop(const vector<int>& windows) const;
 private:
 	const energy::Params &params;
 	const int beam_size;

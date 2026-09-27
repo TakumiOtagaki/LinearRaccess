@@ -441,7 +441,7 @@ int main(int argc, char** argv){
 		if(debug_beam){
 			lcr.set_debug_beam(debug_beam_j0, debug_beam_j1, debug_beam_interval, debug_beam_stop);
 		}
-		lcr.run(seqs[idx]);
+		lcr.run(seqs[idx], /*compute_profile=*/false);
 		if(debug_outer_dp_now){
 			lcr.debug_outer_dp_dump(debug_outer_dp_now_i0, debug_outer_dp_now_i1);
 		}
@@ -474,36 +474,29 @@ int main(int argc, char** argv){
 			multiloop_probs.reserve(access_lens.size());
 		}
 
-		for(const int len : access_lens){
+		if(debug_access){
+			std::cerr << "debug_access: start (" << access_lens.size() << " windows, one pass)" << std::endl;
+		}
+		auto by_all = lcr.calc_accessibility_by_loop(access_lens);
+		for(size_t li = 0; li < access_lens.size(); li++){
+			auto& by = by_all[li];
 			if(debug_access){
-				std::cerr << "debug_access: len=" << len << " start" << std::endl;
+				std::cerr << "debug_access: len=" << access_lens[li]
+				          << " total_size=" << by.total.size()
+				          << " exterior_size=" << by.exterior.size()
+				          << std::endl;
 			}
+			total_probs.push_back(std::move(by.total));
 			if(byloop){
-				const auto by = lcr.calc_accessibility_by_loop(len);
-				if(debug_access){
-					std::cerr << "debug_access: len=" << len
-					          << " total_size=" << by.total.size()
-					          << " exterior_size=" << by.exterior.size()
-					          << std::endl;
-				}
-				total_probs.push_back(by.total);
-				exterior_probs.push_back(by.exterior);
-				hairpin_probs.push_back(by.hairpin);
-				bulge_probs.push_back(by.bulge);
-				internal_probs.push_back(by.internal);
-				multiloop_probs.push_back(by.multiloop);
-			}else{
-				auto probs = lcr.calc_accessibility(len);
-				if(debug_access){
-					std::cerr << "debug_access: len=" << len
-					          << " total_size=" << probs.size()
-					          << std::endl;
-				}
-				total_probs.push_back(std::move(probs));
+				exterior_probs.push_back(std::move(by.exterior));
+				hairpin_probs.push_back(std::move(by.hairpin));
+				bulge_probs.push_back(std::move(by.bulge));
+				internal_probs.push_back(std::move(by.internal));
+				multiloop_probs.push_back(std::move(by.multiloop));
 			}
-			if(debug_access){
-				std::cerr << "debug_access: len=" << len << " done" << std::endl;
-			}
+		}
+		if(debug_access){
+			std::cerr << "debug_access: done" << std::endl;
 		}
 
 		if(print_ensemble_energy){

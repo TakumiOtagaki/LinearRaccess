@@ -201,7 +201,7 @@ const vector<Float>& LinCapR::get_prob_multiloop() const{
 
 
 // calc structural profile
-void LinCapR::run(const string &seq){
+void LinCapR::run(const string &seq, bool compute_profile){
 	initialize(lcr::seq::normalize_sequence(seq));
 	if(debug_multi_energy && !debug_multi_reported){
 		const int i = debug_multi_i;
@@ -249,7 +249,9 @@ void LinCapR::run(const string &seq){
 		cerr << "debug_skip_profile: skip profile" << endl;
 		return;
 	}
-	calc_profile();
+	if(compute_profile){
+		calc_profile();
+	}
 }
 
 

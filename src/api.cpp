@@ -117,7 +117,7 @@ LinearRaccessResult linear_raccess(const std::string& sequence,
 	}else{
 		lcr::dp::set_logsumexp_legacy_mode();
 	}
-	lcr.run(normalized_sequence);
+	lcr.run(normalized_sequence, /*compute_profile=*/false);
 
 	result.accessibility.reserve(lens.size());
 	result.exterior.reserve(lens.size());
@@ -125,8 +125,7 @@ LinearRaccessResult linear_raccess(const std::string& sequence,
 	result.bulge.reserve(lens.size());
 	result.internal.reserve(lens.size());
 	result.multiloop.reserve(lens.size());
-	for(const int len : lens){
-		const auto by = lcr.calc_accessibility_by_loop(len);
+	for(auto& by : lcr.calc_accessibility_by_loop(lens)){
 		result.accessibility.push_back(by.total);
 		result.exterior.push_back(by.exterior);
 		result.hairpin.push_back(by.hairpin);

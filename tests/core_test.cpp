@@ -1,5 +1,6 @@
 #include "linearraccess/api.hpp"
 
+#include "beam_inside_outside.hpp"
 #include "beam_prune.hpp"
 
 #include <algorithm>
@@ -193,6 +194,59 @@ void check_hairpin_cap_consistency() {
   }
 }
 
+
+void require_identical(const std::vector<double>& actual,
+                       const std::vector<double>& expected,
+                       const std::string& label) {
+  require(actual.size() == expected.size(), label + ": size mismatch");
+  for (std::size_t i = 0; i < actual.size(); ++i) {
+    require(actual[i] == expected[i],
+            label + ": not bit-identical at " + std::to_string(i));
+  }
+}
+
+// The multi-window pass must reproduce per-window passes bit for bit, and
+// skipping the structural-profile pass must not change accessibility.
+void check_multi_window_pass() {
+  const std::string sequence =
+      "GUGCCCCCUCCGAUGCCGAGAGAUCCAAAGUCAUCGUUCCAAUGGGGGCUUUGUAGUCUG";
+  const int n = static_cast<int>(sequence.size());
+  // Unsorted, with windows longer than every loop cap; out-of-range windows
+  // (0 and n + 1) must come back empty, as in the single-window call.
+  const std::vector<int> windows{7, 1, 40, 3, 0, n, n + 1};
+  for (const int beam : {0, 5}) {
+    for (const int cap : {6, 30}) {
+      LinCapR with_profile(beam, energy::Model::Turner2004,
+                           LinCapR::EnergyEngine::LinearCapR, false, false,
+                           0.01, cap, cap);
+      with_profile.run(sequence, true);
+      LinCapR without_profile(beam, energy::Model::Turner2004,
+                              LinCapR::EnergyEngine::LinearCapR, false, false,
+                              0.01, cap, cap);
+      without_profile.run(sequence, false);
+      const auto multi = without_profile.calc_accessibility_by_loop(windows);
+      const auto totals = without_profile.calc_accessibility(windows);
+      require(multi.size() == windows.size() && totals.size() == windows.size(),
+              "multi-window result count mismatch");
+      for (std::size_t k = 0; k < windows.size(); ++k) {
+        const std::string label = "beam=" + std::to_string(beam)
+            + " cap=" + std::to_string(cap)
+            + " w=" + std::to_string(windows[k]);
+        const auto single = with_profile.calc_accessibility_by_loop(windows[k]);
+        require_identical(multi[k].total, single.total, label + " total");
+        require_identical(multi[k].exterior, single.exterior, label + " exterior");
+        require_identical(multi[k].hairpin, single.hairpin, label + " hairpin");
+        require_identical(multi[k].bulge, single.bulge, label + " bulge");
+        require_identical(multi[k].internal, single.internal, label + " internal");
+        require_identical(multi[k].multiloop, single.multiloop, label + " multiloop");
+        require_identical(totals[k], single.total, label + " calc_accessibility");
+        const bool in_range = windows[k] >= 1 && windows[k] <= n;
+        require(in_range == !single.total.empty(), label + " range handling");
+      }
+    }
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -212,6 +266,7 @@ int main() {
     check_input_contract();
     check_beam_ties();
     check_hairpin_cap_consistency();
+    check_multi_window_pass();
   } catch (const std::exception& error) {
     std::cerr << "FAIL: " << error.what() << '\n';
     return EXIT_FAILURE;
