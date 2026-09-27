@@ -256,6 +256,7 @@ void check_auto_loop_caps() {
   const int n = static_cast<int>(sequence.size());
   const std::vector<int> lengths{1, 3, 7, 10};
   lcr::api::LinearRaccessConfig defaults;
+  require(defaults.beam == 200, "beam must default to 200");
   require(defaults.c_multi == lcr::api::kLoopCapAuto
               && defaults.c_hairpin == lcr::api::kLoopCapAuto,
           "loop caps must default to auto");

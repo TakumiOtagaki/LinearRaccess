@@ -45,6 +45,7 @@ def main() -> int:
         require('# source_revision=' + build_info['source_revision'] in default_output.read_text().splitlines(),
                 'default metadata must use the compiled revision')
         default_lines = default_output.read_text().splitlines()
+        require('# beam=200' in default_lines, 'beam must default to 200')
         require('# c_multi=auto' in default_lines and '# c_hairpin=auto' in default_lines,
                 'loop caps must default to auto')
         for cap_arg, ok in (('-c_multi=auto', True), ('-c_hairpin=auto', True),

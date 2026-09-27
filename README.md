@@ -107,7 +107,8 @@ optional dependency happens to be present.
 
 ## Algorithmic contract and limitations
 
-By default the hairpin and multiloop unpaired-length caps (`c_hairpin`,
+The default beam width is `b = 200`. By default the hairpin and multiloop
+unpaired-length caps (`c_hairpin`,
 `c_multi`) are tied to the beam: both equal `b`, or the sequence length when
 `beam=0`. The only fixed structural limit is the conventional 30-nt
 internal-loop limit, and `beam -> infinity` recovers the uncapped model. For

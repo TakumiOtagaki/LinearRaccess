@@ -22,7 +22,7 @@ enum class EnergyEngine {
 };
 
 struct LinearRaccessConfig {
-	int beam = 100;
+	int beam = 200;
 	int c_multi = kLoopCapAuto;
 	int c_hairpin = kLoopCapAuto;
 	double rt = 0.61633008;

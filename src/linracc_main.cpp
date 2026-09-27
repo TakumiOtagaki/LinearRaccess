@@ -182,7 +182,7 @@ void write_metadata(std::ostream& os,
 void usage(){
 	std::cout << "Usage: ./LinRacc -seqfile=<fa> -outfile=<txt> -access_len=1,5,10 [options]\n";
 	std::cout << "Options:\n";
-	std::cout << "  -beam=<int>        Beam size (default: 100)\n";
+	std::cout << "  -beam=<int>        Beam size (default: 200)\n";
 	std::cout << "  -energy=<model>    lincapr engine only: turner2004 (default) or turner1999\n";
 	std::cout << "  -engine=<name>     lincapr (default)";
 #ifdef LINEARRACCESS_WITH_RACCESS
@@ -231,7 +231,7 @@ int main(int argc, char** argv){
 	std::string seqfile;
 	std::string outfile;
 	std::vector<int> access_lens;
-	int beam = 100;
+	int beam = 200;
 	int c_multi = LOOP_CAP_AUTO;
 	int c_hairpin = LOOP_CAP_AUTO;
 	double rt = kDefaultOutputRtKcalMol;
