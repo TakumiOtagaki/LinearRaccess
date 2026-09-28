@@ -3,6 +3,27 @@
 
 #include <algorithm>
 #include <cmath>
+
+namespace {
+
+// Double-double accumulator (error-free TwoSum on every addition).  The
+// difference arrays add and later subtract segment masses of order 1, so a
+// plain double prefix sum leaves ~1e-16 absolute error: accessibilities
+// below ~1e-15 come out as noise, even negative.  Accumulating the high and
+// low parts separately keeps ~1e-32 absolute error at O(1) cost per event.
+struct DD {
+	double hi = 0.0, lo = 0.0;
+	void add(double x) {
+		const double s = hi + x;
+		const double bp = s - hi;
+		lo += (hi - (s - bp)) + (x - bp);
+		hi = s;
+	}
+	void add(const DD& o) { add(o.hi); add(o.lo); }
+	double value() const { return hi + lo; }
+};
+
+}  // namespace
 vector<double> LinCapR::calc_accessibility(int window) const {
 	return calc_accessibility_by_loop(window).total;
 }
@@ -45,7 +66,7 @@ LinCapR::calc_accessibility_by_loop(const std::vector<int>& requested) const {
 	int min_window = windows[0];
 	for(const int window : windows) min_window = std::min(min_window, window);
 
-	std::vector<std::vector<double>> diff_hairpin(nw), diff_bulge(nw), diff_internal(nw), diff_multi(nw);
+	std::vector<std::vector<DD>> diff_hairpin(nw), diff_bulge(nw), diff_internal(nw), diff_multi(nw);
 	for(int w = 0; w < nw; w++){
 		const int starts = seq_n - windows[w] + 1;
 		AccessibilityByLoop& out = outs[w];
@@ -55,15 +76,15 @@ LinCapR::calc_accessibility_by_loop(const std::vector<int>& requested) const {
 		out.bulge.assign(starts, 0.0);
 		out.internal.assign(starts, 0.0);
 		out.multiloop.assign(starts, 0.0);
-		diff_hairpin[w].assign(starts + 1, 0.0);
-		diff_bulge[w].assign(starts + 1, 0.0);
-		diff_internal[w].assign(starts + 1, 0.0);
-		diff_multi[w].assign(starts + 1, 0.0);
+		diff_hairpin[w].assign(starts + 1, DD{});
+		diff_bulge[w].assign(starts + 1, DD{});
+		diff_internal[w].assign(starts + 1, DD{});
+		diff_multi[w].assign(starts + 1, DD{});
 	}
 
 	// Adds mass to every window of length window[w] inside [s, e], for each w
 	// with window[w] <= e - s + 1.
-	auto range_add = [&](std::vector<std::vector<double>>& diffs, int s, int e, double mass) {
+	auto range_add = [&](std::vector<std::vector<DD>>& diffs, int s, int e, double mass) {
 		const int seg_len = e - s + 1;
 		for(int w = 0; w < nw; w++){
 			const int window = windows[w];
@@ -74,8 +95,8 @@ LinCapR::calc_accessibility_by_loop(const std::vector<int>& requested) const {
 			if(l < 0) l = 0;
 			if(r > max_start) r = max_start;
 			if(l <= r){
-				diffs[w][l] += mass;
-				diffs[w][r + 1] -= mass;
+				diffs[w][l].add(mass);
+				diffs[w][r + 1].add(-mass);
 			}
 		}
 	};
@@ -180,22 +201,22 @@ LinCapR::calc_accessibility_by_loop(const std::vector<int>& requested) const {
 
 	for(int w = 0; w < nw; w++){
 		AccessibilityByLoop& out = outs[w];
-		double running_hairpin = 0.0;
-		double running_bulge = 0.0;
-		double running_internal = 0.0;
-		double running_multi = 0.0;
+		DD running_hairpin;
+		DD running_bulge;
+		DD running_internal;
+		DD running_multi;
 		for(int i = 0; i <= seq_n - windows[w]; i++){
-			running_hairpin += diff_hairpin[w][i];
-			running_bulge += diff_bulge[w][i];
-			running_internal += diff_internal[w][i];
-			running_multi += diff_multi[w][i];
+			running_hairpin.add(diff_hairpin[w][i]);
+			running_bulge.add(diff_bulge[w][i]);
+			running_internal.add(diff_internal[w][i]);
+			running_multi.add(diff_multi[w][i]);
 
 			// Preserve raw posterior sums.  Silently clamping numerical violations
 			// would hide approximation error from validation and downstream users.
-			out.hairpin[i] = running_hairpin;
-			out.bulge[i] = running_bulge;
-			out.internal[i] = running_internal;
-			out.multiloop[i] = running_multi;
+			out.hairpin[i] = running_hairpin.value();
+			out.bulge[i] = running_bulge.value();
+			out.internal[i] = running_internal.value();
+			out.multiloop[i] = running_multi.value();
 			out.total[i] = out.exterior[i] + out.hairpin[i] + out.bulge[i] + out.internal[i] + out.multiloop[i];
 		}
 	}

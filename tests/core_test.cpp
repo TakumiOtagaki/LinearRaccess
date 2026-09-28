@@ -283,6 +283,30 @@ void check_auto_loop_caps() {
   require(invalid_cap_rejected, "negative non-auto loop cap was accepted");
 }
 
+
+// Tiny accessibilities (here down to ~1e-30, i.e. opening energies above
+// 40 kcal/mol) must not be swamped by prefix-sum round-off: a plain double
+// difference array leaves ~1e-16 absolute error, which made some of these
+// windows (bpRNA_CRW_8501, 126 nt) negative.
+void check_tiny_accessibility_precision() {
+  const std::string sequence =
+      "GCCCACUCGGCCAUAGUGGGCGGGUAACACCCGGACUCGUCUCGAACCCGGAAGUUAAGCCGCCCACGUUAGAAGGGCCGUGGGAUCCGCGAGGACCCGCAGCCCUUCUAAGCCGAGAUGGGCUUC";
+  const auto config = exact_config(lcr::api::EnergyModel::Turner2004,
+                                   static_cast<int>(sequence.size()));
+  const auto result = lcr::api::linear_raccess(sequence, {1, 3, 7, 10, 35}, config);
+  for (std::size_t k = 0; k < result.accessibility.size(); ++k) {
+    for (std::size_t i = 0; i < result.accessibility[k].size(); ++i) {
+      require(result.accessibility[k][i] > 0.0,
+              "non-positive accessibility at window " + std::to_string(k)
+                  + " start " + std::to_string(i));
+      for (const auto* part : {&result.exterior, &result.hairpin, &result.bulge,
+                               &result.internal, &result.multiloop}) {
+        require((*part)[k][i] > -1e-28, "loop-context round-off above 1e-28");
+      }
+    }
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -304,6 +328,7 @@ int main() {
     check_hairpin_cap_consistency();
     check_multi_window_pass();
     check_auto_loop_caps();
+    check_tiny_accessibility_precision();
   } catch (const std::exception& error) {
     std::cerr << "FAIL: " << error.what() << '\n';
     return EXIT_FAILURE;
